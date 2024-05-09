@@ -11,13 +11,8 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 c_handler.setFormatter(formatter)
 logger.addHandler(c_handler)
 
-times_data = pd.read_excel('TIMES.xlsx')
-demographics_data = pd.read_excel('ParticipantDemographics.xlsx')
-initiations_data = pd.read_excel('ProgramInitiations.xlsx')
-terminations_data = pd.read_excel('ProgramTerminations.xlsx')
-servicedel_data = pd.read_excel('ServiceDeliveries.xlsx')
 
-logger.debug(f'TIMES Data Rows: {len(times_data)}')
+
 
 # Raw TIMES total Score/ (# of scored indicators * 5)
 def calculate_scaled_times(rows):
@@ -49,23 +44,34 @@ def fix_assessment_type(group):
     group['Assessment Type'] = a_types
     return group
 
-times_data = times_data.rename(columns={'Participant: Participant ID  ↑':'Participant ID'})
-# Calculate Scaled TIMES Score Column
-scaled_times = times_data.apply(calculate_scaled_times, axis=1).reset_index(drop=True)
-times_data.insert(3, 'Scaled TIMES Score',scaled_times)
+def main():
+    # Calculate Scaled TIMES Score Column
+    times_data = pd.read_excel('TIMES.xlsx')
+    demographics_data = pd.read_excel('ParticipantDemographics.xlsx')
+    initiations_data = pd.read_excel('ProgramInitiations.xlsx')
+    terminations_data = pd.read_excel('ProgramTerminations.xlsx')
+    servicedel_data = pd.read_excel('ServiceDeliveries.xlsx')
+    scaled_times = times_data.apply(calculate_scaled_times, axis=1).reset_index(drop=True)
+    times_data.insert(3, 'Scaled TIMES Score',scaled_times)
+    times_data = times_data.rename(columns={'Participant: Participant ID  ↑':'Participant ID'})
+    
 
-# Fill in missing participant id 
-times_data['Participant ID'] = times_data['Participant ID'].fillna(method='ffill')
+    logger.debug(f'TIMES Data Rows: {len(times_data)}')
+    # Fill in missing participant id 
+    times_data['Participant ID'] = times_data['Participant ID'].fillna(method='ffill')
 
-# Deal with missing Assessment Types
-times_df = times_data.groupby('Participant ID').apply(fix_assessment_type).reset_index(drop=True)
+    # Deal with missing Assessment Types
+    times_df = times_data.groupby('Participant ID').apply(fix_assessment_type).reset_index(drop=True)
 
-# Left Join on All other data sets
-times_demo = pd.merge(times_df, demographics_data, on='Participant ID',how='left')
-times_demo_init = pd.merge(times_demo, initiations_data, on = 'Participant ID', how='left')
-times_demo_init_term = pd.merge(times_demo_init, terminations_data, on='Participant ID',how='left')
-times_demo_init_term_serv = pd.merge(times_demo_init_term, servicedel_data, on='Participant ID',how='left')
+    # Left Join on All other data sets
+    times_demo = pd.merge(times_df, demographics_data, on='Participant ID',how='left')
+    times_demo_init = pd.merge(times_demo, initiations_data, on = 'Participant ID', how='left')
+    times_demo_init_term = pd.merge(times_demo_init, terminations_data, on='Participant ID',how='left')
+    times_demo_init_term_serv = pd.merge(times_demo_init_term, servicedel_data, on='Participant ID',how='left')
 
-logger.debug(f'Final Df length:{len(times_demo_init_term_serv)}')
+    logger.debug(f'Final Df length:{len(times_demo_init_term_serv)}')
 
-times_demo_init_term_serv.to_csv('transformed_data.csv')
+    #times_demo_init_term_serv.to_csv('transformed_data.csv')
+
+if __name__=='__main__':
+    main()
