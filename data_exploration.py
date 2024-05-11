@@ -15,6 +15,8 @@ logger.addHandler(c_handler)
 
 
 
+
+
 # Raw TIMES total Score/ (# of scored indicators * 5)
 def calculate_scaled_times(rows):
     """
@@ -82,6 +84,10 @@ def main():
 
     #logger.debug(f'Final Df length:{len(times_demo_init_term_serv)}')
 
+    #times_demo_init_term_serv.to_csv('transformed_data.csv')
+
+if __name__=='__main__':
+    main()
     #times_demo_init_term_serv.to_csv('transformed_data.csv')
 
 if __name__=='__main__':
