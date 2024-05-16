@@ -5,16 +5,11 @@ from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
 c_handler = logging.StreamHandler()
 c_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 c_handler.setFormatter(formatter)
 logger.addHandler(c_handler)
-
-
-
-
 
 
 # Raw TIMES total Score/ (# of scored indicators * 5)
@@ -56,39 +51,77 @@ def fix_assessment_type(group):
     group['Assessment Type'] = a_types
     return group
 
+def clean_times(times_data):
+    """
+    Function designed to resolve any data issues found in times.xlsx. 
+    Args:
+        times_data (Dataframe): Unprocessed times dataframe provided by client.
+
+    Returns:
+        times (Dataframe): Cleaned times dataframe.
+    """
+     # Calculate Scaled TIMES Score Column
+   
+    scaled_times = times_data.apply(calculate_scaled_times, axis=1).reset_index(drop=True)
+    times_data.insert(3, 'Scaled TIMES Score',scaled_times)
+    times_data = times_data.rename(columns={'Participant: Participant ID  ↑':'Participant ID',
+                                            'Assessment Completed Date  ↑':'Assessment Date'})
+    times_data['Assessment Date'] = pd.to_datetime(times_data['Assessment Date'],format='%Y-%m-%d')
+    logger.debug(f'TIMES Data Rows: {len(times_data)}')
+    # Fill in missing participant id 
+    times_data['Participant ID'] = times_data['Participant ID'].fillna(method='ffill')
+    times_data['Participant ID'] = times_data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x)
+
+    # Deal with missing Assessment Types
+    times_df = times_data.groupby('Participant ID').apply(fix_assessment_type).reset_index(drop=True)
+    
+    return times_df
+
+def clean_terminations(terminations_data):
+    """
+    Cleans terminations data provided by sponsor. 
+
+    Args:
+        terminations_data (Dataframe): Unprocessed terminations data provided by sponsor. 
+
+    Returns:
+        terminations (Dataframe): Cleaned terminations dataset.
+    """
+    # Rename columns
+    terminations_data = terminations_data.rename(columns={'Department  ↑':'Department',
+                                                          'Program Name  ↑':'Program Name',
+                                                          'End Date  ↑': 'End Date'})
+    terminations_data.drop(columns=['Unnamed: 3'],inplace=True)
+    logger.debug(terminations_data.columns)
+
+    # Forwardfill data
+    terminations_data['Department'] = terminations_data['Department'].fillna(method='ffill')
+    terminations_data['Program Name'] = terminations_data['Program Name'].fillna(method='ffill')
+    terminations_data['Start Date'] = terminations_data['Start Date'].fillna(method='ffill')
+    terminations_data['End Date'] = terminations_data['End Date'].fillna(method='ffill')
+    terminations_data['Participant ID'] = terminations_data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x).reset_index(drop=True)
+    return terminations_data
+
 def main():
-    # Calculate Scaled TIMES Score Column
+   # Load data
     times_data = pd.read_excel('TIMES.xlsx')
     demographics_data = pd.read_excel('ParticipantDemographics.xlsx')
     initiations_data = pd.read_excel('ProgramInitiations.xlsx')
     terminations_data = pd.read_excel('ProgramTerminations.xlsx')
     servicedel_data = pd.read_excel('ServiceDeliveries.xlsx')
-    scaled_times = times_data.apply(calculate_scaled_times, axis=1).reset_index(drop=True)
-    times_data.insert(3, 'Scaled TIMES Score',scaled_times)
-    times_data = times_data.rename(columns={'Participant: Participant ID  ↑':'Participant ID',
-                                            'Assessment Completed Date  ↑':'Assessment Date'})
-    
-    times_data['Assessment Date'] = pd.to_datetime(times_data['Assessment Date'],format='%Y-%m-%d')
-    logger.debug(f'TIMES Data Rows: {len(times_data)}')
-    # Fill in missing participant id 
-    times_data['Participant ID'] = times_data['Participant ID'].fillna(method='ffill')
 
-    # Deal with missing Assessment Types
-    times_df = times_data.groupby('Participant ID').apply(fix_assessment_type).reset_index(drop=True)
-    times_df.to_csv('transformed_times.csv')
-    # Left Join on All other data sets
-    #times_demo = pd.merge(times_df, demographics_data, on='Participant ID',how='left')
-    # times_demo_init = pd.merge(times_df, initiations_data, on = 'Participant ID', how='left')
-    # times_demo_init_term = pd.merge(times_demo_init, terminations_data, on='Participant ID',how='left')
-    # times_demo_init_term_serv = pd.merge(times_demo_init_term, servicedel_data, on='Participant ID',how='left')
+    # Run datasets through cleaning functions
+    cleaned_times = clean_times(times_data)
+    cleaned_terminations = clean_terminations(terminations_data)
+
+    # Write cleaned data to files.
+    # cleaned_times.to_csv('output/transformed_times.csv')
+    # logger.debug('Wrote times data to Excel')
+    cleaned_terminations.to_csv('output/transformed_terminations.csv', index=False)
+    logger.debug('Wrote terminations data to Excel')
+
 
     #logger.debug(f'Final Df length:{len(times_demo_init_term_serv)}')
-
-    #times_demo_init_term_serv.to_csv('transformed_data.csv')
-
-if __name__=='__main__':
-    main()
-    #times_demo_init_term_serv.to_csv('transformed_data.csv')
 
 if __name__=='__main__':
     main()
