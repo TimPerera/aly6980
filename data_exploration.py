@@ -115,8 +115,8 @@ def main():
     cleaned_terminations = clean_terminations(terminations_data)
 
     # Write cleaned data to files.
-    # cleaned_times.to_csv('output/transformed_times.csv')
-    # logger.debug('Wrote times data to Excel')
+    cleaned_times.to_csv('output/transformed_times.csv', index=False)
+    logger.debug('Wrote times data to Excel')
     cleaned_terminations.to_csv('output/transformed_terminations.csv', index=False)
     logger.debug('Wrote terminations data to Excel')
 
