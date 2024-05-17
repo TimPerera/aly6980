@@ -102,6 +102,51 @@ def clean_terminations(terminations_data):
     terminations_data['Participant ID'] = terminations_data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x).reset_index(drop=True)
     return terminations_data
 
+def clean_services(data):
+    """
+    Cleans service deliveries data provided by sponsor. 
+
+    Args:
+        data (Dataframe): Unprocessed service deliveries data provided by sponsor. 
+
+    Returns:
+        data (Dataframe): Cleaned service deliveries dataset.
+    
+    """
+    data = data.rename(columns={'Program: Program Name  ↑':'Program Name',
+                                'Service: Service Name  ↑': 'Service Name'})
+    data['Program Name'] = data['Program Name'].fillna(method='ffill')
+    data['Service Name'] = data['Service Name'].fillna(method='ffill')
+    data['Participant ID'] = data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x)
+    return data
+
+def get_goal_setting_cols(df):
+    goal_setting_columns = []
+    for _, row in df.iterrows():
+        if row['GOAL-SETTING'] == 'y':
+            goal_setting_columns.append(row['PROGRAM'])
+    return goal_setting_columns
+
+    
+def pivot_data(data, goal_setting_columns):
+    """
+    Pivots cleaned service deliverables data. Keeps only goal-setting related data. 
+
+
+    """
+    participant_data = {}
+    for idx, row in data.iterrows(): # Loop through dataset
+        if row['Program Name'] in goal_setting_columns: # if program is goal-setting
+            if row['Participant ID'] in participant_data: # if participant has already been registered before
+                if row['Program Name'] in participant_data[row['Participant ID']]: # if participant has already engaged in program before.
+                    participant_data[row['Participant ID']][row['Program Name']] += row['Quantity'] # Then add to existing quantity value
+                else:
+                    participant_data[row['Participant ID']][row['Program Name']] = row['Quantity'] # Then store quantity
+            else: # this is a new participant there new program as well
+                participant_data[row['Participant ID']] = {row['Program Name']: row['Quantity']}
+
+    return participant_data
+
 def main():
    # Load data
     times_data = pd.read_excel('TIMES.xlsx')
@@ -109,19 +154,31 @@ def main():
     initiations_data = pd.read_excel('ProgramInitiations.xlsx')
     terminations_data = pd.read_excel('ProgramTerminations.xlsx')
     servicedel_data = pd.read_excel('ServiceDeliveries.xlsx')
-
+    goal_setting_df = pd.read_excel('Salesforce - Program & Service List.xlsx')
+    goal_cols = get_goal_setting_cols(goal_setting_df)
     # Run datasets through cleaning functions
     cleaned_times = clean_times(times_data)
     cleaned_terminations = clean_terminations(terminations_data)
+    cleaned_services = clean_services(servicedel_data)
+ 
+    # generate new data from services data for machine learning
+    data = pivot_data(cleaned_services, goal_cols)
+    data_df = pd.DataFrame().from_dict(data, orient='index').fillna(0)
+    
 
     # Write cleaned data to files.
     cleaned_times.to_csv('output/transformed_times.csv', index=False)
-    logger.debug('Wrote times data to Excel')
+    logger.debug('Wrote times data to Excel.')
     cleaned_terminations.to_csv('output/transformed_terminations.csv', index=False)
-    logger.debug('Wrote terminations data to Excel')
+    logger.debug('Wrote terminations data to Excel.')
+    cleaned_services.to_csv('output/transformed_services.csv',index=False)
+    logger.debug('Wrote services data to Excel.')
+    data_df.to_csv('pivot_services.csv')
+    logger.debug('Wrote pivot services to Excel')
 
-
-    #logger.debug(f'Final Df length:{len(times_demo_init_term_serv)}')
 
 if __name__=='__main__':
     main()
+    
+
+    #pivot_df = data_df.pivot(index='Participant ID',columns='Program', )
