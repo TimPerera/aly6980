@@ -13,14 +13,19 @@ def setup_logging():
     logger.addHandler(c_handler)
     return logger
 
+logger = setup_logging()
 
-def write_to_csv(df:pd.DataFrame, name, index=False) -> None:
-    logger = setup_logging()
+def write_to_csv(df:pd.DataFrame, name, index=False, logger=None) -> None:
     if not name: raise ValueError('No name provided.')
     if not isinstance(name,str): raise TypeError('Incorrect data type provided for file name.')
 
-    df.to_csv(f'output/{name}', index=index)
-    logger.debug(f'Completed writing {name} to CSV file. Check output/{name}.')
+    try:
+        df.to_csv(f'output/{name}', index=index)
+        if logger:
+            logger.debug(f'Completed writing {name} to CSV file. Check output/{name}.')
+    except Exception as e:
+        logger.error(e)
+    
 
 def read_from_excel(file_name:str) -> str:
     df = pd.read_excel(file_name)

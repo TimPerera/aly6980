@@ -1,6 +1,8 @@
 import pandas as pd
 from datetime import datetime, timedelta
 
+from utils import logger
+
 def clean_services(data):
     """
     Cleans service deliveries data provided by sponsor. 
@@ -17,6 +19,10 @@ def clean_services(data):
     data['Program Name'] = data['Program Name'].fillna(method='ffill')
     data['Service Name'] = data['Service Name'].fillna(method='ffill')
     data['Participant ID'] = data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x)
+    data = data[data['Participant ID'].apply(lambda x: isinstance(x, str))] # filters out unwanted values
+    logger.debug(f'Before: {len(data)}')
+    data = data[~data['Quantity'].apply(lambda x: pd.isna(x) or x==0)] # removes quantities where it either blank or 0.
+    logger.debug(f'After: {len(data)}')
     return data
 
 def clean_terminations(terminations_data):
@@ -114,3 +120,18 @@ def get_goal_setting_cols(df):
         if row['GOAL-SETTING'] == 'y':
             goal_setting_columns.append(row['PROGRAM'])
     return goal_setting_columns
+
+
+if __name__ == '__main__':
+    service_data = pd.read_excel('ServiceDeliveries.xlsx')
+    clean_service = clean_services(service_data)
+    logger.debug(clean_service['Quantity'][:10])
+    #clean_service.to_csv('faulty.csv')
+    # logger.debug(f'Len of df is {len(clean_service)}')
+    # #df = clean_service[~pd.isna(clean_service['Participant ID'])]
+    # df = clean_service[clean_service['Participant ID'].apply(lambda x: isinstance(x, str))]
+    # logger.debug(df['Participant ID'])
+    # df.to_csv('sample.csv')
+
+    # programs = pd.read_excel('Salesforce - Program & Service List.xlsx')
+    # logger.debug(get_goal_setting_cols(programs))
