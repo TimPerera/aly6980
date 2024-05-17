@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 c_handler = logging.StreamHandler()
 c_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
 c_handler.setFormatter(formatter)
 logger.addHandler(c_handler)
 
@@ -67,7 +67,7 @@ def clean_times(times_data):
     times_data = times_data.rename(columns={'Participant: Participant ID  ↑':'Participant ID',
                                             'Assessment Completed Date  ↑':'Assessment Date'})
     times_data['Assessment Date'] = pd.to_datetime(times_data['Assessment Date'],format='%Y-%m-%d')
-    logger.debug(f'TIMES Data Rows: {len(times_data)}')
+    #logger.debug(f'TIMES Data Rows: {len(times_data)}')
     # Fill in missing participant id 
     times_data['Participant ID'] = times_data['Participant ID'].fillna(method='ffill')
     times_data['Participant ID'] = times_data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x)
@@ -92,7 +92,6 @@ def clean_terminations(terminations_data):
                                                           'Program Name  ↑':'Program Name',
                                                           'End Date  ↑': 'End Date'})
     terminations_data.drop(columns=['Unnamed: 3'],inplace=True)
-    logger.debug(terminations_data.columns)
 
     # Forwardfill data
     terminations_data['Department'] = terminations_data['Department'].fillna(method='ffill')
@@ -135,7 +134,7 @@ def pivot_data(data, goal_setting_columns):
 
     """
     participant_data = {}
-    for idx, row in data.iterrows(): # Loop through dataset
+    for _, row in data.iterrows(): # Loop through dataset
         if row['Program Name'] in goal_setting_columns: # if program is goal-setting
             if row['Participant ID'] in participant_data: # if participant has already been registered before
                 if row['Program Name'] in participant_data[row['Participant ID']]: # if participant has already engaged in program before.
@@ -146,6 +145,13 @@ def pivot_data(data, goal_setting_columns):
                 participant_data[row['Participant ID']] = {row['Program Name']: row['Quantity']}
 
     return participant_data
+
+def write_to_csv(df:pd.DataFrame, name, index=False) -> None:
+    if not name: raise ValueError('No name provided.')
+    if not isinstance(name,str): raise TypeError('Incorrect data type provided for file name.')
+
+    df.to_csv(f'output/{name}', index=index)
+    logger.debug(f'Completed writing {name} to CSV file. Check output/{name}.')
 
 def main():
    # Load data
@@ -167,14 +173,10 @@ def main():
     
 
     # Write cleaned data to files.
-    cleaned_times.to_csv('output/transformed_times.csv', index=False)
-    logger.debug('Wrote times data to Excel.')
-    cleaned_terminations.to_csv('output/transformed_terminations.csv', index=False)
-    logger.debug('Wrote terminations data to Excel.')
-    cleaned_services.to_csv('output/transformed_services.csv',index=False)
-    logger.debug('Wrote services data to Excel.')
-    data_df.to_csv('pivot_services.csv')
-    logger.debug('Wrote pivot services to Excel')
+    write_to_csv(cleaned_times, 'transformed_times.csv')
+    write_to_csv(cleaned_terminations, 'transformed_terminations.csv')
+    write_to_csv(cleaned_services,'transformed_services.csv')
+    write_to_csv(data_df,'pivot_services.csv',index=True)
 
 
 if __name__=='__main__':
