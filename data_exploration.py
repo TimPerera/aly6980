@@ -180,5 +180,3 @@ def main():
 if __name__=='__main__':
     main()
     
-
-    #pivot_df = data_df.pivot(index='Participant ID',columns='Program', )
