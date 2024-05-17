@@ -4,7 +4,16 @@ from utils import logger, write_to_csv, read_from_excel
 from data_cleaning import clean_services, clean_terminations, clean_times, get_goal_setting_cols
 from data_transformations import pivot_data, compute_delta_times
 
-def main(file_names):
+def main(file_names:list):
+    """
+    Main logic of application. Loads, cleans, transforms, and writes data to CSV. 
+
+    Args:
+        file_names (list): List of file names.
+    
+    Returns:
+        None
+    """
    # Load data
     datasets = [read_from_excel(file_name) for file_name in file_names]
     logger.debug(f'Collected {len(datasets)} datasets')
@@ -19,13 +28,10 @@ def main(file_names):
     # Generate new data from services data for machine learning
     pivot_services_data = pivot_data(cleaned_services, goal_cols)
     delta_times_score = compute_delta_times(cleaned_times)
-    logger.debug(delta_times_score.columns)
-    logger.debug(f'Length of delta table {len(delta_times_score)}')
     # Join pivot_services and delta_times
     pivot_delta = pd.merge(pivot_services_data, delta_times_score, how='left',  left_index=True, right_index=True)
-    pivot_delta.fillna('N/A - Missing TIMES Record', inplace=True) # mark any row that doesn't have a Times Score as missing 
-    
-    # add initial and last times scaled score 
+    pivot_delta.fillna('N/A - Missing TIMES Record', inplace=True) # Mark any row that doesn't have a Times Score as missing 
+ 
     # Write cleaned data to files.
     write_to_csv(cleaned_times, 'transformed_times.csv',logger=logger)
     write_to_csv(cleaned_terminations, 'transformed_terminations.csv',logger=logger)

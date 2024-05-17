@@ -1,14 +1,17 @@
+"""
+data_transformations.py
+
+This module describes the functions applied to sponsor's dataset (after cleaning process - check data_cleaning.py)
+"""
+
 import pandas as pd
-from utils import setup_logging, logger
+from utils import logger
 
-from data_cleaning import get_goal_setting_cols
-
-def pivot_data(data, goal_setting_columns):
+def pivot_data(data: pd.DataFrame, goal_setting_columns: list)-> pd.DataFrame:
     """
     Pivots cleaned service deliverables data. Keeps only goal-setting related data. 
 
     """
-
     participant_data = {}
     for _, row in data.iterrows(): # Loop through dataset
         if row['Program Name'] in goal_setting_columns: # if program is goal-setting
@@ -22,16 +25,17 @@ def pivot_data(data, goal_setting_columns):
     data_df = pd.DataFrame().from_dict(participant_data, orient='index').fillna(0)
     return data_df
 
-def compute_delta_times(data:pd.DataFrame):
-    # def get_delta(group):
-    #     if len(group) > 1:
-    #         times_list = list(group['Scaled TIMES Score'])
-    #         delta_times = times_list[-1] - times_list[0]
-    #         return delta_times, times_list[0], times_list[-1]
-    #     else:
-    #         return 'N/A - Single Observation'  
-    # delta_data = data.groupby('Participant ID').apply(get_delta).reset_index(name='Delta Times').set_index('Participant ID')
-    # return delta_data
+def compute_delta_times(data:pd.DataFrame)-> pd.DataFrame:
+    """
+    As we need to consolidate information for each participant to one row, this function provides the
+    first and last Scaled TIMES score, and the difference (delta) between the two.
+
+    Args:
+        data (pd.DataFrame): cleaned/transformed TIMES data. 
+
+    Returns:
+        df (pd.DataFrame): Dataframe containing scaled Delta TIMES, Initial TIMES, and Last TIMES 
+    """
     res = {}
     for name, group in data.groupby('Participant ID'):
         if len(group) > 1:

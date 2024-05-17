@@ -1,9 +1,14 @@
+"""
+data_cleaning.py
+
+Provides functions to clean sponsor data. This is a pre-processing step before transforming the data. See data_transformations.py.
+"""
 import pandas as pd
 from datetime import datetime, timedelta
 
 from utils import logger
 
-def clean_services(data):
+def clean_services(data: pd.DataFrame)-> pd.DataFrame:
     """
     Cleans service deliveries data provided by sponsor. 
 
@@ -25,7 +30,7 @@ def clean_services(data):
     logger.debug(f'After: {len(data)}')
     return data
 
-def clean_terminations(terminations_data):
+def clean_terminations(terminations_data: pd.DataFrame)-> pd.DataFrame:
     """
     Cleans terminations data provided by sponsor. 
 
@@ -70,6 +75,12 @@ def fix_assessment_type(group):
     2) Convert any later observations identified as a Baseline to Quarterly
     3) Any subsequent observations not labelled will be Quarterly
 
+    Args:
+        group (grouped dataframe): dataset grouped by Participant ID
+
+    Returns:
+        group (grouped dataframe): transformed grouped dataset. 
+
     """
     a_types = list(group['Assessment Type'])
     if pd.isna(a_types[0]): # if first entry is Null then make it Baseline
@@ -98,23 +109,27 @@ def clean_times(times_data):
         times (Dataframe): Cleaned times dataframe.
     """
      # Calculate Scaled TIMES Score Column
-   
     scaled_times = times_data.apply(calculate_scaled_times, axis=1).reset_index(drop=True)
     times_data.insert(3, 'Scaled TIMES Score',scaled_times)
     times_data = times_data.rename(columns={'Participant: Participant ID  ↑':'Participant ID',
                                             'Assessment Completed Date  ↑':'Assessment Date'})
     times_data['Assessment Date'] = pd.to_datetime(times_data['Assessment Date'],format='%Y-%m-%d')
-    #logger.debug(f'TIMES Data Rows: {len(times_data)}')
     # Fill in missing participant id 
     times_data['Participant ID'] = times_data['Participant ID'].fillna(method='ffill')
     times_data['Participant ID'] = times_data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x)
-
     # Deal with missing Assessment Types
     times_df = times_data.groupby('Participant ID').apply(fix_assessment_type).reset_index(drop=True)
-    
     return times_df
 
-def get_goal_setting_cols(df):
+def get_goal_setting_cols(df: pd.DataFrame)-> list:
+    """
+    Retrieves programs and services that are defined as "Goal Setting" from supplied df.
+
+    df (pd.DataFrame): Salesforce - Program & Service List.xlsx file containing all programs and services
+                       provided by sponsor.
+
+    goal_setting_columns (list): 
+    """
     goal_setting_columns = []
     for _, row in df.iterrows():
         if row['GOAL-SETTING'] == 'y':
