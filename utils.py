@@ -25,23 +25,32 @@ def setup_logging():
 
 logger = setup_logging()
 
-def write_to_csv(df:pd.DataFrame, name, index=False, logger=None) -> None:
+def write_to_file(df:pd.DataFrame, name, file_type='excel', index=False, logger=None) -> None:
     """
     Utility function to write data to csv file (extension must be provided).
 
     Args:
-        df (pd.DataFrame): Dataset to be written to csv
+        df (pd.DataFrame): Dataset to be written to csv.
+        name (str): Name to be assigned to file.
+        file_type (str): Choose between 'excel' and 'csv' format.
+        index (bool): Include index in final dataset.
+        logger (<logging> object): assign existing logger (see utils.py) to function to enable log messages.
 
     Returns:
         None: Confirmation and filepath written to console.
     """
     if not name: raise ValueError('No name provided.')
     if not isinstance(name,str): raise TypeError('Incorrect data type provided for file name.')
-
+    
     try:
-        df.to_csv(f'output/{name}', index=index)
-        if logger:
-            logger.debug(f'Completed writing {name} to CSV file. Check output/{name}.')
+        if file_type=='csv':
+            df.to_csv(f'output/{name}', index=index)
+            if logger:
+                logger.debug(f'Completed writing {name} to CSV file. Check output/{name}.')
+        elif file_type=='excel':
+            df.to_excel(f'output/{name}', index=index)
+            if logger:
+                logger.debug(f'Completed writing {name} to Excel file. Check output/{name}.')
     except Exception as e:
         logger.error(e)
     

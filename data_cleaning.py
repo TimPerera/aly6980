@@ -19,15 +19,17 @@ def clean_services(data: pd.DataFrame)-> pd.DataFrame:
         data (Dataframe): Cleaned service deliveries dataset.
     
     """
+    logger.debug(f'Original Service Deliveries File Lenght: {len(data)}')
     data = data.rename(columns={'Program: Program Name  ↑':'Program Name',
                                 'Service: Service Name  ↑': 'Service Name'})
     data['Program Name'] = data['Program Name'].fillna(method='ffill')
+    data['Delivery Date'] = pd.to_datetime(data['Delivery Date'],format='%Y/%m/%d')
     data['Service Name'] = data['Service Name'].fillna(method='ffill')
     data['Participant ID'] = data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x)
     data = data[data['Participant ID'].apply(lambda x: isinstance(x, str))] # filters out unwanted values
-    logger.debug(f'Before: {len(data)}')
     data = data[~data['Quantity'].apply(lambda x: pd.isna(x) or x==0)] # removes quantities where it either blank or 0.
-    logger.debug(f'After: {len(data)}')
+    data = data[data['Delivery Date']>'01/01/2022'] # Filters data to collect data only from 2022 onwards.
+    logger.debug(f'Final Service Deliveries File Lenght: {len(data)}')
     return data
 
 def clean_terminations(terminations_data: pd.DataFrame)-> pd.DataFrame:

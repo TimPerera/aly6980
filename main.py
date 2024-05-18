@@ -1,6 +1,6 @@
 import pandas as pd
 
-from utils import logger, write_to_csv, read_from_excel
+from utils import logger, write_to_file, read_from_excel
 from data_cleaning import clean_services, clean_terminations, clean_times, get_goal_setting_cols
 from data_transformations import pivot_data, compute_delta_times
 
@@ -33,11 +33,11 @@ def main(file_names:list):
     pivot_delta.fillna('N/A - Missing TIMES Record', inplace=True) # Mark any row that doesn't have a Times Score as missing 
  
     # Write cleaned data to files.
-    write_to_csv(cleaned_times, 'transformed_times.csv',logger=logger)
-    write_to_csv(cleaned_terminations, 'transformed_terminations.csv',logger=logger)
-    write_to_csv(cleaned_services,'transformed_services.csv',logger=logger)
-    write_to_csv(pivot_services_data,'pivot_services.csv',logger=logger, index=True)
-    write_to_csv(pivot_delta, 'model_data.csv',logger=logger, index=True)
+    write_to_file(cleaned_times, 'transformed_times.xlsx',logger=logger)
+    write_to_file(cleaned_terminations, 'transformed_terminations.xlsx',logger=logger)
+    write_to_file(cleaned_services,'transformed_services.xlsx',logger=logger)
+    write_to_file(pivot_services_data,'pivot_services.xlsx',logger=logger, index=True)
+    write_to_file(pivot_delta, 'model_data.xlsx',logger=logger, index=True)
 
 
 if __name__=='__main__':
