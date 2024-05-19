@@ -29,8 +29,8 @@ def clean_services(data: pd.DataFrame)-> pd.DataFrame:
     data = data[data['Participant ID'].apply(lambda x: isinstance(x, str))] # filters out unwanted values
     data = data[~data['Quantity'].apply(lambda x: pd.isna(x) or x==0)] # removes quantities where it either blank or 0.
     data = data[data['Delivery Date']>'01/01/2022'] # Filters data to collect data only from 2022 onwards.
-    data = data[~data['Service Name'].apply(lambda x: 'Do Not Use' in x)]
-    data = data[~data['Unit of Measurement'].apply(lambda x: x=='none')]
+    data = data[~data['Service Name'].apply(lambda x: 'Do Not Use' in x)] # if service name contains "Do Not Use" it is filtered out
+    data = data[~data['Unit of Measurement'].apply(lambda x: x=='none')] # if Unit of measurement includes "None" then filter out
     logger.debug(f'Final Service Deliveries File Lenght: {len(data)}')
     return data
 

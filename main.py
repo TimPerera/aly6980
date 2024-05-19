@@ -1,3 +1,9 @@
+"""
+main.py 
+
+Main logic of application. Loads, cleans, transforms, and writes data to CSV. 
+
+"""
 import pandas as pd
 
 from utils import logger, write_to_file, read_from_excel
