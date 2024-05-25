@@ -87,7 +87,7 @@ def fix_assessment_type(group):
 
     """
     a_types = list(group['Assessment Type'])
-    if pd.isna(a_types[0]): # if first entry is Null then make it Baseline
+    if a_types[0] != 'Baseline': # if first entry is Null then make it Baseline
         a_types[0] = 'Baseline'
     if 'Baseline' in a_types[1:]: # Baseline entry exists after first entry. Replace that with 'Quarterly'
         idx = a_types[1:].index('Baseline')
@@ -99,7 +99,7 @@ def fix_assessment_type(group):
         list(group['Assessment Date'])[-1] - current_date > timedelta(weeks=13.04) # Last assessment was more than 3 months ago. Change last entry to Closing
         a_types[-1] = 'Closing'
 
-    
+
     group['Assessment Type'] = a_types
     return group
 
@@ -122,7 +122,9 @@ def clean_times(times_data):
     times_data['Participant ID'] = times_data['Participant ID'].fillna(method='ffill')
     times_data['Participant ID'] = times_data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x)
     # Deal with missing Assessment Types
-    times_df = times_data.groupby('Participant ID').apply(fix_assessment_type).reset_index(drop=True)
+    times_tmp_df = times_data.groupby('Participant ID').apply(fix_assessment_type).reset_index(drop=True)
+    # remove participants who only participated once.
+    times_df = times_tmp_df.groupby('Participant ID').filter(lambda x: len(x)>1)
     return times_df
 
 def get_goal_setting_cols(df: pd.DataFrame)-> list:
@@ -142,15 +144,7 @@ def get_goal_setting_cols(df: pd.DataFrame)-> list:
 
 
 if __name__ == '__main__':
-    service_data = pd.read_excel('ServiceDeliveries.xlsx')
-    clean_service = clean_services(service_data)
-    logger.debug(clean_service['Quantity'][:10])
-    #clean_service.to_csv('faulty.csv')
-    # logger.debug(f'Len of df is {len(clean_service)}')
-    # #df = clean_service[~pd.isna(clean_service['Participant ID'])]
-    # df = clean_service[clean_service['Participant ID'].apply(lambda x: isinstance(x, str))]
-    # logger.debug(df['Participant ID'])
-    # df.to_csv('sample.csv')
-
-    # programs = pd.read_excel('Salesforce - Program & Service List.xlsx')
-    # logger.debug(get_goal_setting_cols(programs))
+    # times_data = pd.read_excel('ServiceDeliveries.xlsx')
+    # clean_service = clean_services(service_data)
+    # logger.debug(clean_service['Quantity'][:10])
+    pass

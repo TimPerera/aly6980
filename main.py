@@ -49,5 +49,5 @@ def main(file_names:list):
 if __name__=='__main__':
     file_names = ['TIMES.xlsx','ParticipantDemographics.xlsx','ProgramInitiations.xlsx',
                   'ProgramTerminations.xlsx','ServiceDeliveries.xlsx','Salesforce - Program & Service List.xlsx']
-    main(file_names)
+    times = main(file_names)
     
