@@ -7,7 +7,7 @@ Main logic of application. Loads, cleans, transforms, and writes data to CSV.
 import pandas as pd
 
 from utils import logger, write_to_file, read_from_excel
-from data_cleaning import clean_services, clean_terminations, clean_times, get_goal_setting_cols
+from data_cleaning import clean_services, clean_terminations, clean_times, get_goal_setting_cols, clean_demographics
 from data_transformations import pivot_data, compute_delta_times
 
 def main(file_names:list):
@@ -30,20 +30,24 @@ def main(file_names:list):
     cleaned_times = clean_times(times_data)
     cleaned_terminations = clean_terminations(terminations_data)
     cleaned_services = clean_services(servicedel_data)
- 
+    cleaned_demographics = clean_demographics(demographics_data)
+
     # Generate new data from services data for machine learning
     pivot_services_data = pivot_data(cleaned_services, goal_cols)
-    delta_times_score = compute_delta_times(cleaned_times)
+    delta_times_score = compute_delta_times(cleaned_times) # returns three columns 'Delta TIMES', 'Initial TIMES','Last TIMES'
     # Join pivot_services and delta_times
-    pivot_delta = pd.merge(pivot_services_data, delta_times_score, how='left',  left_index=True, right_index=True)
-    pivot_delta.fillna('N/A - Missing TIMES Record', inplace=True) # Mark any row that doesn't have a Times Score as missing 
- 
+    services_timesdelta = pd.merge(pivot_services_data, delta_times_score, how='left', left_index=True,right_index=True)
+    cols_to_fill = ['Delta TIMES','Initial TIMES','Last TIMES']
+    services_timesdelta.loc[:,cols_to_fill] = services_timesdelta.loc[:,cols_to_fill].fillna(-1)
+    
     # Write cleaned data to files.
-    write_to_file(cleaned_times, 'transformed_times.xlsx',logger=logger)
-    write_to_file(cleaned_terminations, 'transformed_terminations.xlsx',logger=logger)
-    write_to_file(cleaned_services,'transformed_services.xlsx',logger=logger)
-    write_to_file(pivot_services_data,'pivot_services.xlsx',logger=logger, index=True)
-    write_to_file(pivot_delta, 'model_data.xlsx',logger=logger, index=True)
+    write_to_file(cleaned_times, 'cleaned_times.xlsx',logger=logger)
+    write_to_file(cleaned_terminations, 'cleaned_terminations.xlsx',logger=logger)
+    write_to_file(cleaned_services,'cleaned_services.xlsx',logger=logger)
+    write_to_file(cleaned_demographics, 'cleaned_demo_data.xlsx',logger=logger)
+    write_to_file(pivot_services_data,'cleaned_and_transformed_services.xlsx',logger=logger, index=True)
+    write_to_file(services_timesdelta, 'model_data.xlsx',logger=logger, index=True)
+
 
 
 if __name__=='__main__':

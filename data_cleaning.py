@@ -22,9 +22,9 @@ def clean_services(data: pd.DataFrame)-> pd.DataFrame:
     logger.debug(f'Original Service Deliveries File Lenght: {len(data)}')
     data = data.rename(columns={'Program: Program Name  ↑':'Program Name',
                                 'Service: Service Name  ↑': 'Service Name'})
-    data['Program Name'] = data['Program Name'].fillna(method='ffill')
-    data['Delivery Date'] = pd.to_datetime(data['Delivery Date'],format='%Y/%m/%d')
-    data['Service Name'] = data['Service Name'].fillna(method='ffill')
+    data['Program Name'] = data['Program Name'].ffill()
+    data['Delivery Date'] = pd.to_datetime(data['Delivery Date'],format='%Y-%m-%d')
+    data['Service Name'] = data['Service Name'].ffill()
     data['Participant ID'] = data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x)
     data = data[data['Participant ID'].apply(lambda x: isinstance(x, str))] # filters out unwanted values
     data = data[~data['Quantity'].apply(lambda x: pd.isna(x) or x==0)] # removes quantities where it either blank or 0.
@@ -51,10 +51,10 @@ def clean_terminations(terminations_data: pd.DataFrame)-> pd.DataFrame:
     terminations_data.drop(columns=['Unnamed: 3'],inplace=True)
 
     # Forwardfill data
-    terminations_data['Department'] = terminations_data['Department'].fillna(method='ffill')
-    terminations_data['Program Name'] = terminations_data['Program Name'].fillna(method='ffill')
-    terminations_data['Start Date'] = terminations_data['Start Date'].fillna(method='ffill')
-    terminations_data['End Date'] = terminations_data['End Date'].fillna(method='ffill')
+    terminations_data['Department'] = terminations_data['Department'].ffill()
+    terminations_data['Program Name'] = terminations_data['Program Name'].ffill()
+    terminations_data['Start Date'] = terminations_data['Start Date'].ffill()
+    terminations_data['End Date'] = terminations_data['End Date'].ffill()
     terminations_data['Participant ID'] = terminations_data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x).reset_index(drop=True)
     return terminations_data
 
@@ -119,7 +119,8 @@ def clean_times(times_data):
                                             'Assessment Completed Date  ↑':'Assessment Date'})
     times_data['Assessment Date'] = pd.to_datetime(times_data['Assessment Date'],format='%Y-%m-%d')
     # Fill in missing participant id 
-    times_data['Participant ID'] = times_data['Participant ID'].fillna(method='ffill')
+    times_data['Participant ID'] = times_data[['Participant ID']].ffill()
+    logger.debug(f"Attention: {type(times_data['Participant ID'][0])}")
     times_data['Participant ID'] = times_data['Participant ID'].apply(lambda x: x.lower() if isinstance(x,str) else x)
     # Deal with missing Assessment Types
     times_tmp_df = times_data.groupby('Participant ID').apply(fix_assessment_type).reset_index(drop=True)
@@ -142,9 +143,33 @@ def get_goal_setting_cols(df: pd.DataFrame)-> list:
             goal_setting_columns.append(row['PROGRAM'])
     return goal_setting_columns
 
+def clean_demographics(demo:pd.DataFrame) -> pd.DataFrame:
+    """
+    Cleans demographics data given by sponsor
+    """
+    # Drop duplicate entries
+    demo.drop_duplicates(subset='Participant ID',inplace=True)
+    demo.drop(columns=['Department  ↑','Program Name  ↑'],inplace=True) # removes unneccessary columns
+    demo.dropna(how='all',inplace=True, subset=['Age',
+                                                'Gender',
+                                                'Sexual Orientation',
+                                                'Ethnic / Cultural Background',
+                                                'Self-Described Race',
+                                                'Current Income Source',	
+                                                'Born in Canada?',	
+                                                'Residency Status (Work Eligibility)',	
+                                                'Religion / Spiritual Affiliation',
+                                                'Level of Education',
+                                                'Indigenous Identity',
+                                                'Current Housing Situation',	
+                                                'Identify as Person with Disability?',	
+                                                'Household Size',	
+                                                'Total Household Income Last Year'])
+    return demo
 
 if __name__ == '__main__':
     # times_data = pd.read_excel('ServiceDeliveries.xlsx')
     # clean_service = clean_services(service_data)
     # logger.debug(clean_service['Quantity'][:10])
-    pass
+    demo = pd.read_excel('input/Participantdemographics.xlsx')
+    clean_demographics(demo)

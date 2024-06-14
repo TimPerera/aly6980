@@ -42,7 +42,9 @@ def compute_delta_times(data:pd.DataFrame)-> pd.DataFrame:
             times_list = list(group['Scaled TIMES Score'])
             delta_times = times_list[-1] - times_list[0]
             res[name] = [delta_times, times_list[0], times_list[-1]]
+
     df = pd.DataFrame().from_dict(res, orient='index')
+
     df.columns = ['Delta TIMES', 'Initial TIMES','Last TIMES']
     return df
 
@@ -53,6 +55,6 @@ if __name__=='__main__':
     # goal_cols_df = pd.read_excel('Salesforce - Program & Service List.xlsx')
     # goal_cols = get_goal_setting_cols(goal_cols_df)
     # pivot_data(data, goal_cols)
-    data = pd.read_csv('output/transformed_times.csv')
+    data = pd.read_excel('output/transformed_times.xlsx')
     res = compute_delta_times(data.iloc[:15])
     logger.debug(res)
